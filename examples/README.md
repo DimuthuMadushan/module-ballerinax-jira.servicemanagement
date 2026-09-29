@@ -2,13 +2,24 @@
 
 The `ballerinax/jira.servicemanagement` connector provides practical examples illustrating usage in various scenarios.
 
-[//]: # (TODO: Add examples)
-1. 
-2. 
+1. **[Service request intake](https://github.com/ballerina-platform/module-ballerinax-jira.servicemanagement/tree/main/examples/service_request_intake)** - Find a request type by name, check its fields, raise a customer request and attach a supporting file to it.
+
+2. **[Customer organization onboarding](https://github.com/ballerina-platform/module-ballerinax-jira.servicemanagement/tree/main/examples/customer_organization_onboarding)** - Create an organization for a new client company, give it access to a service desk, create its first customer and add them to the organization.
 
 ## Prerequisites
 
-[//]: # (TODO: Add prerequisites)
+1. Create an Atlassian API token as described in the [Setup guide](https://central.ballerina.io/ballerinax/jira.servicemanagement/latest#setup-guide).
+
+2. For each example, create a `Config.toml` file with the related configuration. Here's an example of how your Config.toml file should look:
+
+```toml
+serviceUrl = "https://your-domain.atlassian.net"
+email = "<your-atlassian-account-email>"
+apiToken = "<your-api-token>"
+serviceDeskId = "<service-desk-id>"
+```
+
+Each example lists the additional values it needs in its own README.
 
 ## Running an example
 

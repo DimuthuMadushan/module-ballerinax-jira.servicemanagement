@@ -1,0 +1,14 @@
+[package]
+org = "ballerinax"
+name = "service_request_intake"
+version = "0.1.0"
+distribution = "2201.12.0"
+
+[build-options]
+observabilityIncluded = true
+
+[[dependency]]
+org = "ballerinax"
+name = "jira.servicemanagement"
+version = "2.0.0"
+repository = "local"
