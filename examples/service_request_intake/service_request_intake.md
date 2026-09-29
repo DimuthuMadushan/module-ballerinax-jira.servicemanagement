@@ -1,6 +1,6 @@
 # Service request intake
 
-This example raises a customer request on a Jira Service Management service desk and attaches a supporting file to it. It finds the request type by name, checks that the type collects a summary and a description, creates the request, uploads the file as a temporary attachment and then attaches it to the request with a customer-visible comment.
+This example raises a customer request on a Jira Service Management service desk and attaches a supporting file to it. It reads the file first, finds the request type by name, checks that the type collects a summary and a description and requires no other field, creates the request, uploads the file as a temporary attachment and then attaches it to the request with a customer-visible comment.
 
 ## Prerequisites
 

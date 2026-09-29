@@ -657,7 +657,7 @@ public isolated client class Client {
         string resourcePath = string `/rest/servicedeskapi/servicedesk/${getEncodedUri(serviceDeskId)}/attachTemporaryFile`;
         map<string|string[]> httpHeaders = http:getHeaderMap(headers);
         http:Request request = new;
-        mime:Entity[] bodyParts = check createBodyParts(check jsondata:toJson(payload).ensureType());
+        mime:Entity[] bodyParts = check createBodyParts(payload);
         request.setBodyParts(bodyParts);
         return self.clientEp->post(resourcePath, request, httpHeaders);
     }
@@ -931,10 +931,12 @@ public isolated client class Client {
     # + requestTypeId - The ID of the request type on which the property will be set
     # + propertyKey - The key of the request type property. The maximum length of the key is 255 bytes
     # + headers - Headers to be sent with the request 
+    # + payload - The value of the request type property. The value has to be a valid, non-empty [JSON](https://tools.ietf.org/html/rfc4627) value. The maximum length of the property value is 32768 bytes 
     # + return - Returned if the request type property is updated 
-    remote isolated function setPropertyByServiceDeskId(string serviceDeskId, int:Signed32 requestTypeId, string propertyKey, map<string|string[]> headers = {}) returns json|error {
+    remote isolated function setPropertyByServiceDeskId(string serviceDeskId, int:Signed32 requestTypeId, string propertyKey, json payload, map<string|string[]> headers = {}) returns json|error {
         string resourcePath = string `/rest/servicedeskapi/servicedesk/${getEncodedUri(serviceDeskId)}/requesttype/${getEncodedUri(requestTypeId)}/property/${getEncodedUri(propertyKey)}`;
         http:Request request = new;
+        request.setPayload(payload, "application/json");
         return self.clientEp->put(resourcePath, request, headers);
     }
 

@@ -15,9 +15,11 @@
 // under the License.
 
 // Raises a customer request on a service desk and attaches a supporting file to it:
-// find the request type by name, check it takes a summary and a description, create the
-// request, upload the file as a temporary attachment, then attach it to the request.
+// read the file, find the request type by name, check it takes a summary and a description
+// and nothing else required, create the request, upload the file as a temporary
+// attachment, then attach it to the request.
 
+import ballerina/file;
 import ballerina/io;
 import ballerinax/jira.servicemanagement as jsm;
 
@@ -33,31 +35,35 @@ configurable string attachmentPath = ?;
 public function main() returns error? {
     jsm:Client jira = check new ({auth: {username: email, password: apiToken}}, serviceUrl);
 
-    // Step 1: find the request type by name.
-    jsm:PagedDTORequestTypeDTO requestTypes = check jira->getRequestTypes(serviceDeskId, searchQuery = requestTypeName);
-    jsm:RequestTypeDTO[] matches = from jsm:RequestTypeDTO requestType in requestTypes.values ?: []
-        where requestType.name == requestTypeName
-        select requestType;
-    if matches.length() == 0 {
-        return error(string `No request type named '${requestTypeName}' in service desk ${serviceDeskId}`);
-    }
-    string? requestTypeId = matches[0].id;
-    if requestTypeId is () {
-        return error("The request type has no ID");
-    }
+    // Step 1: read the attachment first, so a bad path fails before anything is created in Jira.
+    byte[] content = check io:fileReadBytes(attachmentPath);
+    string fileName = check file:basename(attachmentPath);
 
-    // Step 2: make sure the request type collects the two fields this example fills in.
+    // Step 2: find the request type by name, reading every page of the search results.
+    string requestTypeId = check findRequestTypeId(jira);
+
+    // Step 3: make sure the request type collects the two fields this example fills in, and
+    // needs no other required field.
     int:Signed32 typeId = check int:fromString(requestTypeId).ensureType();
     jsm:CustomerRequestCreateMetaDTO meta = check jira->getRequestTypeFields(serviceDeskId, typeId);
-    string[] fieldIds = from jsm:RequestTypeFieldDTO 'field in meta.requestTypeFields ?: []
+    jsm:RequestTypeFieldDTO[] fields = meta.requestTypeFields ?: [];
+    string[] fieldIds = from jsm:RequestTypeFieldDTO 'field in fields
         select 'field.fieldId ?: "";
-    foreach string required in ["summary", "description"] {
-        if fieldIds.indexOf(required) is () {
-            return error(string `Request type '${requestTypeName}' has no '${required}' field`);
+    foreach string needed in ["summary", "description"] {
+        if fieldIds.indexOf(needed) is () {
+            return error(string `Request type '${requestTypeName}' has no '${needed}' field`);
         }
     }
+    string[] otherRequired = from jsm:RequestTypeFieldDTO 'field in fields
+        let string fieldId = 'field.fieldId ?: ""
+        where 'field.required == true && fieldId != "summary" && fieldId != "description"
+        select fieldId;
+    if otherRequired.length() > 0 {
+        return error(string `Request type '${requestTypeName}' requires fields this example does not fill in: ${
+            string:'join(", ", ...otherRequired)}`);
+    }
 
-    // Step 3: raise the request.
+    // Step 4: raise the request.
     jsm:CustomerRequestDTO request = check jira->createCustomerRequest({
         serviceDeskId,
         requestTypeId,
@@ -69,9 +75,7 @@ public function main() returns error? {
     }
     io:println("Created request ", issueKey);
 
-    // Step 4: upload the file as a temporary attachment on the service desk.
-    byte[] content = check io:fileReadBytes(attachmentPath);
-    string fileName = fileNameOf(attachmentPath);
+    // Step 5: upload the file as a temporary attachment on the service desk.
     jsm:TemporaryAttachments uploaded = check jira->attachTemporaryFile(serviceDeskId, {
         file: {fileContent: content, fileName}
     });
@@ -81,7 +85,7 @@ public function main() returns error? {
         return error("The upload returned no temporary attachment ID");
     }
 
-    // Step 5: attach it to the request, with a comment the customer can see.
+    // Step 6: attach it to the request, with a comment the customer can see.
     jsm:AttachmentCreateResultDTO attached = check jira->createAttachment(issueKey, {
         temporaryAttachmentIds,
         'public: true,
@@ -95,7 +99,25 @@ public function main() returns error? {
     }
 }
 
-isolated function fileNameOf(string path) returns string {
-    int? slash = path.lastIndexOf("/");
-    return slash is int ? path.substring(slash + 1) : path;
+// Pages through the service desk's request types until one matches `requestTypeName` exactly.
+function findRequestTypeId(jsm:Client jira) returns string|error {
+    int:Signed32 offset = 0;
+    while true {
+        jsm:PagedDTORequestTypeDTO page = check jira->getRequestTypes(serviceDeskId,
+            searchQuery = requestTypeName, 'start = offset);
+        jsm:RequestTypeDTO[] requestTypes = page.values ?: [];
+        foreach jsm:RequestTypeDTO requestType in requestTypes {
+            if requestType.name == requestTypeName {
+                string? id = requestType.id;
+                if id is () {
+                    return error("The request type has no ID");
+                }
+                return id;
+            }
+        }
+        if page.isLastPage != false || requestTypes.length() == 0 {
+            return error(string `No request type named '${requestTypeName}' in service desk ${serviceDeskId}`);
+        }
+        offset = <int:Signed32>(offset + requestTypes.length());
+    }
 }

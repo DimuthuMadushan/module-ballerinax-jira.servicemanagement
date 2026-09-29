@@ -9084,7 +9084,16 @@
                     }
                 ],
                 "x-experimental": true,
-                "x-atlassian-connect-scope": "INACCESSIBLE"
+                "x-atlassian-connect-scope": "INACCESSIBLE",
+                "requestBody": {
+                    "description": "The value of the request type property. The value has to be a valid, non-empty [JSON](https://tools.ietf.org/html/rfc4627) value. The maximum length of the property value is 32768 bytes",
+                    "content": {
+                        "application/json": {
+                            "schema": {}
+                        }
+                    },
+                    "required": true
+                }
             },
             "delete": {
                 "tags": [

@@ -6,7 +6,7 @@ This example onboards a new client company to a Jira Service Management service 
 
 ### 1. Set up credentials
 
-Follow the [Setup guide](https://github.com/ballerina-platform/module-ballerinax-jira.servicemanagement/blob/main/ballerina/README.md#setup-guide) to create an API token. The account must be a service desk administrator or agent, and the site must let agents create customers and organizations.
+Follow the [Setup guide](https://github.com/ballerina-platform/module-ballerinax-jira.servicemanagement/blob/main/ballerina/README.md#setup-guide) to create an API token. The account needs the Jira Administrator global permission, which `createCustomer` requires. It must also be a service desk administrator or agent, and the site must let agents create customers and organizations.
 
 ### 2. Configuration
 
@@ -22,7 +22,7 @@ customerEmail = "<customer-email>"
 customerDisplayName = "<customer-display-name>"
 ```
 
-Creating the customer sends them an account invitation from your site.
+Creating a customer does not by itself invite them. Sending an invitation needs the separate service desk invitation endpoint (`inviteCustomer`), and whether the customer receives it depends on the site's customer notification settings. If a customer with `customerEmail` already exists, the example reuses that account instead of creating a new one.
 
 ## Run the example
 

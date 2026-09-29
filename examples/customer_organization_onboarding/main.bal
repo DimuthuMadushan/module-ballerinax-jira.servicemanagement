@@ -44,13 +44,24 @@ public function main() returns error? {
     // Step 2: give the organization access to the service desk.
     check jira->addOrganization(serviceDeskId, {organizationId});
 
-    // Step 3: create the customer account.
-    jsm:UserDTO customer = check jira->createCustomer({email: customerEmail, displayName: customerDisplayName});
-    string? accountId = customer.accountId;
-    if accountId is () {
-        return error("The new customer has no account ID");
+    // Step 3: create the customer account, or reuse it if the email is already registered.
+    string accountId;
+    jsm:UserDTO|error customer = jira->createCustomer({email: customerEmail, displayName: customerDisplayName});
+    if customer is jsm:UserDTO {
+        string? createdId = customer.accountId;
+        if createdId is () {
+            return error("The new customer has no account ID");
+        }
+        accountId = createdId;
+        io:println(string `Created customer ${customerDisplayName} (${accountId})`);
+    } else {
+        string? existingId = check findCustomerAccountId(jira, customerEmail);
+        if existingId is () {
+            return customer;
+        }
+        accountId = existingId;
+        io:println(string `Customer ${customerEmail} already exists (${accountId})`);
     }
-    io:println(string `Created customer ${customerDisplayName} (${accountId})`);
 
     // Step 4: make the customer a member of the organization.
     check jira->addUsersToOrganization(organizationId, {accountIds: [accountId]});
@@ -71,4 +82,22 @@ public function main() returns error? {
         offset = <int:Signed32>(offset + users.length());
     }
     io:println(string `'${organizationName}' now has ${members.length()} member(s): `, members);
+}
+
+// Looks up an existing customer of the service desk by email, reading every page of matches.
+function findCustomerAccountId(jsm:Client jira, string customerEmail) returns string?|error {
+    int:Signed32 offset = 0;
+    while true {
+        jsm:PagedDTOUserDTO page = check jira->getCustomers(serviceDeskId, query = customerEmail, 'start = offset);
+        jsm:UserDTO[] users = page.values ?: [];
+        foreach jsm:UserDTO user in users {
+            if user.emailAddress == customerEmail {
+                return user.accountId;
+            }
+        }
+        if page.isLastPage != false || users.length() == 0 {
+            return ();
+        }
+        offset = <int:Signed32>(offset + users.length());
+    }
 }

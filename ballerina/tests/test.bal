@@ -17,6 +17,7 @@
 import ballerina/http;
 import ballerina/os;
 import ballerina/test;
+import ballerina/time;
 
 final boolean isLiveServer = os:getEnv("IS_LIVE_SERVER") == "true";
 final string serviceUrl = isLiveServer ? os:getEnv("JIRA_SM_SERVICE_URL") : "http://localhost:9090";
@@ -245,9 +246,12 @@ isolated function testDeleteOrganization() returns error? {
 
 @test:Config {groups: ["live_tests", "mock_tests"]}
 isolated function testCreateCustomer() returns error? {
+    // Live runs need a fresh email each time; Jira rejects one that already has an account.
+    string email = isLiveServer ? string `connector-test-customer-${time:utcNow()[0]}@example-corp.io`
+        : "connector-test-customer@example-corp.io";
     UserDTO customer = check jira->createCustomer({
         displayName: "Connector Test Customer",
-        email: "connector-test-customer@example-corp.io"
+        email
     });
     test:assertTrue(customer.accountId !is ());
 }

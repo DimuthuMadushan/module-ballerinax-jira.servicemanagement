@@ -48,6 +48,12 @@ These changes are done in order to improve the overall usability, and as workaro
 9. **Summaries**: 3 summaries were under 10 characters (`Get info`, `Subscribe`, `Get queue`), and they were expanded. 16 summaries that the source repeats across the duplicated operations in item 2 were qualified by scope, for example `Get organization property` and `Get request type property`.
    - **Reason**: Each generated method needs a distinct doc comment.
 
+10. **Request body for `setPropertyByServiceDeskId`**: The source `PUT /rest/servicedeskapi/servicedesk/{serviceDeskId}/requesttype/{requestTypeId}/property/{propertyKey}` declares no request body, although the API requires the property value as JSON. A required `application/json` body is added, the same as the one on the organization `setProperty`.
+   - **Reason**: Without it the generated method has no payload parameter and sends an empty `PUT`, so the property can never be set.
+
+11. **Post-generation patch: multipart body of `attachTemporaryFile`**: This is not a spec change. `bal openapi` 2201.13.4 generates `createBodyParts(check jsondata:toJson(payload).ensureType())`, and `jsondata:toJson` turns the `fileContent` bytes into a JSON integer array. The file part then fails `createBodyParts`' file check and is sent as a text part. In `ballerina/client.bal` the call is changed to `createBodyParts(payload)`.
+   - **Reason**: Without the patch no file upload can work. No spec change avoids it, so **re-apply this patch after every client regeneration**, including `postfix.py`'s regenerate step.
+
 ## OpenAPI cli command
 
 The following command was used to generate the Ballerina client from the OpenAPI specification. The command should be executed from the repository root directory.

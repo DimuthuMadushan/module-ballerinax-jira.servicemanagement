@@ -30,7 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
     requires, and returns `TemporaryAttachments` instead of `json`.
   - Integer path parameters are `int:Signed32` instead of `int` (`organizationId`, `approvalId`, `requestTypeId`).
     `getRequestTypeById` takes `requestTypeId` as a `string`.
-  - `setProperty` takes the property value as a required `json payload`.
+  - `setProperty` and `setPropertyByServiceDeskId` take the property value as a required `json payload`.
   - Query parameters are passed as named arguments, for example `getOrganizations('start = 0, 'limit = 50)`.
     Positional query arguments no longer compile.
 - `serviceUrl` is now an optional second argument of `init`, defaulting to `https://your-domain.atlassian.net`.
